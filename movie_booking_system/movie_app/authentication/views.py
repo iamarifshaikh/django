@@ -1,13 +1,8 @@
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from .custom import CustomJWTAuthentication
-from rest_framework_simplejwt.tokens import OutstandingToken
-from rest_framework.permissions import IsAuthenticated
-from rest_framework_simplejwt.authentication import JWTAuthentication
-from .serializers import UserSerializer, ChangePasswordSerializer, LoginSerializer, LogoutSerializer
+from .serializers import UserSerializer, ChangePasswordSerializer, LoginSerializer
 from rest_framework.permissions import AllowAny
-from .models import User
 import logging
 
 logger = logging.getLogger(__name__)

@@ -1,8 +1,6 @@
-# serializers.py
 from rest_framework import serializers
 from rest_framework_simplejwt.tokens import RefreshToken
 from .models import User
-from .blacklist import BlacklistedToken
 import logging
 
 logger = logging.getLogger(__name__)
@@ -47,25 +45,6 @@ class LoginSerializer(serializers.Serializer):
                 }
         raise serializers.ValidationError("Invalid Credentials")
 
-class LogoutSerializer(serializers.Serializer):
-    refresh = serializers.CharField()
-
-    def validate(self, attrs):
-        logger.info("Validating logout data")
-        self.token = attrs['refresh']
-        logger.debug(f"Refresh token received: {self.token[:10]}...")
-        return attrs
-
-    def save(self, **kwargs):
-        logger.info("Attempting to blacklist refresh token")
-        try:
-            RefreshToken(self.token).blacklist()
-            BlacklistedToken.blacklist(self.token)
-            logger.info("Refresh token successfully blacklisted")
-        except Exception as e:
-            logger.error(f"Unexpected error during token blacklisting: {str(e)}")
-            raise serializers.ValidationError("Unexpected error during token blacklisting")
-        
 class ChangePasswordSerializer(serializers.Serializer):
     old_password = serializers.CharField(required=True)
     new_password = serializers.CharField(required=True)
