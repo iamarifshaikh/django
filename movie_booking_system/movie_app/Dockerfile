@@ -1,3 +1,4 @@
+# Official Python image from the Docker Hub
 FROM python:3.12.3
 
 # Set unbuffered output for python
@@ -12,7 +13,7 @@ COPY requirements.txt ./
 
 # Install app dependencies
 COPY requirements.txt .
-RUN pip install -r requirements.txt
+RUN pip install --upgrade pip && pip install -r requirements.txt
 
 # Bundle app source
 COPY . .

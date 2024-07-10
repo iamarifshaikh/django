@@ -1,15 +1,20 @@
 from rest_framework import status
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
+from .custom import CustomJWTAuthentication
+from rest_framework_simplejwt.tokens import OutstandingToken
 from rest_framework.permissions import IsAuthenticated
-from .serializers import UserSerializer, ChangePasswordSerializer
+from rest_framework_simplejwt.authentication import JWTAuthentication
+from .serializers import UserSerializer, ChangePasswordSerializer, LoginSerializer, LogoutSerializer
+from rest_framework.permissions import AllowAny
 from .models import User
 import logging
 
 logger = logging.getLogger(__name__)
 
 class RegisterView(APIView):
+    permission_classes = [AllowAny]
+
     def post(self, request):
         logger.info(f"Received registration request with data: {request.data}")
         serializer = UserSerializer(data=request.data)
@@ -26,21 +31,37 @@ class RegisterView(APIView):
         logger.error(f"Invalid registration data: {serializer.errors}")
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-class LoginView(TokenObtainPairView):
-    def post(self,request, *args, **kwargs):
-        response = super().post(request, *args, **kwargs)
-        if response.status_code == 200:
-            access_token = response.data['access']
-            refresh_token = response.data['refresh']
-            response.set_cookie('access_token', access_token,httponly=True, samesite='Strict')
-            response.set_cookie('refresh_token', refresh_token, httponly=True, samesite='Strict')
-        return Response
-    
-class LogoutView(APIView):
-    permission_classes = [IsAuthenticated]
+class LoginView(APIView):
+    permission_classes = [AllowAny]
     
     def post(self,request):
-        response = Response({"message":"Logged Out Successfully"},status=status.HTTP_200_OK)
+        serializer = LoginSerializer(data=request.data)
+        if serializer.is_valid():
+            data = serializer.validated_data
+            response = Response({"message": "Login successful"}, status=status.HTTP_200_OK)
+            response.set_cookie('access_token',data['access'],httponly=True,samesite='Strict')
+            response.set_cookie('refresh_token',data['refresh'],httponly=True,samesite='Strict')
+            return response
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+class LogoutView(APIView):
+    permission_classes = [AllowAny]  # Allow any user to access this view
+
+    def post(self, request):
+        access_token = request.COOKIES.get('access_token')
+        refresh_token = request.COOKIES.get('refresh_token')
+
+        if not access_token or not refresh_token:
+            logger.info("No tokens found in cookies")
+            return Response({"detail": "No authentication tokens provided."}, status=status.HTTP_401_UNAUTHORIZED)
+
+        logger.info(f"Logout attempt for user with token: {access_token[:10]}...")
+
+        response = Response({"detail": "Successfully logged out."}, status=status.HTTP_200_OK)
+        
+        # Remove the cookies
         response.delete_cookie("access_token")
-        response.delete_cookie("refresh-token")
+        response.delete_cookie("refresh_token")
+        
+        logger.info("Cookies removed, user logged out")
         return response

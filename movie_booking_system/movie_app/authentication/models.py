@@ -1,5 +1,6 @@
+# models.py
 from mongoengine import Document, StringField, EmailField, DateTimeField
-from django.contrib.auth.hashers import make_password, check_password
+import bcrypt
 from django.utils import timezone
 import logging
 
@@ -10,15 +11,16 @@ class User(Document):
     name = StringField(required=True, max_length=150, unique=True)
     email = EmailField(unique=True, required=True)
     password = StringField(required=True)
-    dateOfRegisteration = DateTimeField(default=timezone.now)
+    date_of_registration = DateTimeField(default=timezone.now)
     
-    def set_password(self,raw_password):
+    def set_password(self, raw_password):
         logger.info(f"Setting password for user {self.name}")
-        self.password = make_password(raw_password)
-        logger.info(f"Password hash: {self.password[:10]}...")  
+        salt = bcrypt.gensalt()
+        self.password = bcrypt.hashpw(raw_password.encode('utf-8'), salt).decode('utf-8')
+        logger.info(f"Password hash: {self.password[:10]}...")
         
     def check_password(self, raw_password):
-        return check_password(raw_password, self.password)
+        return bcrypt.checkpw(raw_password.encode('utf-8'), self.password.encode('utf-8'))
     
     def save(self, *args, **kwargs):
         logger.info(f"Saving user {self.name}")
