@@ -1,4 +1,3 @@
-# models.py
 from mongoengine import Document, StringField, EmailField, DateTimeField
 import bcrypt
 from django.utils import timezone
